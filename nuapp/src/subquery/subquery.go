@@ -6,8 +6,8 @@ import (
 
 	sq "../shadowcache"
 	st "../statquery"
-	"github.com/gomemcache/memcache"
-	_ "github.com/mysql"
+	"github.com/bradfitz/gomemcache/memcache"
+	_ "github.com/go-sql-driver/mysql"
 
 	//    "net"
 	"bufio"
