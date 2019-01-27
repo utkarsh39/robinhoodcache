@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"math/rand"
 
-	"../../../src/github.com/gomemcache/memcache"
-	_ "../../../src/github.com/mysql"
 	sq "../shadowcache"
 	st "../statquery"
+	"github.com/gomemcache/memcache"
+	_ "github.com/mysql"
 
 	//    "net"
 	"bufio"

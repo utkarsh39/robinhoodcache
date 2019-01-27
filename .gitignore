@@ -9,5 +9,6 @@
 *.o
 *.log
 *.csv
-src/*
+src/
 bin/
+pkg/
