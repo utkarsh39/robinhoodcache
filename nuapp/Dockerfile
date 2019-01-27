@@ -16,8 +16,8 @@ ADD ./start.sh /nuapp/start.sh
 WORKDIR /nuapp
 
 # src has to be subdir
-RUN GOPATH=$(pwd) go get appserver
-RUN GOPATH=$(pwd) go build appserver
+RUN GOPATH=$(pwd) CGO_ENABLED=0 go get appserver
+RUN GOPATH=$(pwd) CGO_ENABLED=0 go build appserver
 
 
 # EXPOSE 27001-27064
