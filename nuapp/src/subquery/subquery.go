@@ -4,8 +4,9 @@ import (
 	"database/sql"
 	"math/rand"
 
-	sq "../shadowcache"
-	st "../statquery"
+	sq "shadowcache"
+	st "statquery"
+
 	"github.com/bradfitz/gomemcache/memcache"
 	_ "github.com/go-sql-driver/mysql"
 
