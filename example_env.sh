@@ -20,6 +20,7 @@ export COMPOSE_FILE=example-compose.yml
 
 # per container debug flag (container will start, sleep, and user can login start service manually)
 
+# Set to 1. The container will sleep with the environment set up.
 export DEBUG_NUAPP=
 export DEBUG_MYSQL=
 export DEBUG_REQUESTOR=
