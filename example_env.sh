@@ -11,7 +11,7 @@ export TRACE_URL="https://github.com/dasebe/robinhoodcache/blob/master/tracegen/
 
 # the base URL where configs are hosted (default is our example)
 # export CONFIG_URL=https://github.com/dasebe/robinhoodcache/raw/master/configs
-export CONFIG_URL=https://github.com/utkarsh39/robinhoodcache/blob/redis/configs/example_mini_config.tar.gz?raw=true
+export CONFIG_URL=https://github.com/utkarsh39/robinhoodcache/blob/memcache/configs/example_mini_config.tar.gz?raw=true
 # config directory basename (default is our example)
 export CONFIG=example_config
 
