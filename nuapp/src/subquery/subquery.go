@@ -9,6 +9,7 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gomodule/redigo/redis"
 
 	//    "net"
 	"bufio"
@@ -88,6 +89,7 @@ type QueryLayerSlice []QueryLayer
 // subsystem types: caches and backend connections
 type Subsystem struct {
 	CacheClient      *memcache.Client
+	RedisCacheClient redis.Conn
 	CacheSema        Semaphore
 	BackClient       BackConn
 	BackSema         Semaphore
@@ -445,10 +447,11 @@ func InitSubSystems(cacheip string) {
 	DepConfigs = make([]st.DepConfig, 64)
 	err = dec.Decode(&DepConfigs)
 	fmt.Println("using cacheip ", cacheip)
+
 	for _, conf := range DepConfigs {
-		for i, _ := range conf.CacheAddr {
-			conf.CacheAddr[i] = fmt.Sprintf("%s:%d", cacheip, conf.CachePort)
-		}
+		// for i, _ := range conf.CacheAddr {
+		conf.CacheAddr = fmt.Sprintf("%s:%d", cacheip, conf.CachePort)
+		// }
 	}
 	Check(err)
 	// create subsystems
@@ -464,14 +467,20 @@ func InitSubSystems(cacheip string) {
 				var Db *sql.DB
 				Db, err = sql.Open("mysql", dbServer)
 				Check(err)
+				var c redis.Conn
+				c, err = redis.Dial("tcp", ":6379")
+				if err != nil {
+					fmt.Println("Redis connection error", conf.CacheAddr, err)
+				}
 				Subs[conf.Name] =
 					Subsystem{
-						CacheClient: memcache.New(conf.CacheAddr...),
-						CacheSema:   NewSemaphore(appConf.Cache.MaxConcurrentReqs),
-						BackClient:  MySqlBackConn{Conn: Db, R: rand.New(rand.NewSource(123)), WriteProb: conf.WriteProb},
-						BackSema:    NewSemaphore(conf.MaxOpenConns),
-						Shadow1:     sq.NewCache(conf.CacheSize * 1024),
-						Shadow2:     sq.NewCache(conf.CacheSize * 1024),
+						CacheClient:      memcache.New(conf.CacheAddr),
+						RedisCacheClient: c,
+						CacheSema:        NewSemaphore(appConf.Cache.MaxConcurrentReqs),
+						BackClient:       MySqlBackConn{Conn: Db, R: rand.New(rand.NewSource(123)), WriteProb: conf.WriteProb},
+						BackSema:         NewSemaphore(conf.MaxOpenConns),
+						Shadow1:          sq.NewCache(conf.CacheSize * 1024),
+						Shadow2:          sq.NewCache(conf.CacheSize * 1024),
 					}
 				totalCapacity += conf.CacheSize * 1024
 				Subs[conf.Name].CacheClient.Timeout = time.Second
@@ -480,7 +489,8 @@ func InitSubSystems(cacheip string) {
 				dbConnection := false
 				cacheConnection := false
 				dbConnection = Subs[conf.Name].BackClient.Ping()
-				err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
+				// err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
+				_, err := Subs[conf.Name].RedisCacheClient.Do("PING")
 				if err == nil {
 					cacheConnection = true
 				}
@@ -519,15 +529,21 @@ func InitSubSystems(cacheip string) {
 					} else {
 						fpars = *conf.FbackPars
 					}
+					var c redis.Conn
+					c, err = redis.Dial("tcp", ":6379")
+					if err != nil {
+						fmt.Println("Redis connection error", conf.CacheAddr, err)
+					}
 					// make subsystem
 					Subs[conf.Name] =
 						Subsystem{
-							CacheClient: memcache.New(conf.CacheAddr...),
-							CacheSema:   NewSemaphore(appConf.Cache.MaxConcurrentReqs),
-							BackClient:  FbBackConn{Conn: clients, Pars: fpars},
-							BackSema:    NewSemaphore(conf.MaxOpenConns),
-							Shadow1:     sq.NewCache(conf.CacheSize * 1024),
-							Shadow2:     sq.NewCache(conf.CacheSize * 1024),
+							CacheClient:      memcache.New(conf.CacheAddr),
+							RedisCacheClient: c,
+							CacheSema:        NewSemaphore(appConf.Cache.MaxConcurrentReqs),
+							BackClient:       FbBackConn{Conn: clients, Pars: fpars},
+							BackSema:         NewSemaphore(conf.MaxOpenConns),
+							Shadow1:          sq.NewCache(conf.CacheSize * 1024),
+							Shadow2:          sq.NewCache(conf.CacheSize * 1024),
 						}
 					totalCapacity += conf.CacheSize * 1024
 					Subs[conf.Name].CacheClient.Timeout = time.Second
@@ -536,13 +552,17 @@ func InitSubSystems(cacheip string) {
 					dbConnection := false
 					cacheConnection := false
 					dbConnection = Subs[conf.Name].BackClient.Ping()
-					err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
+					// err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
+					_, err := Subs[conf.Name].RedisCacheClient.Do("PING")
 					if err == nil {
 						cacheConnection = true
+					} else {
+						fmt.Println("Redis", err)
 					}
 					if dbConnection && cacheConnection {
 						break
 					}
+
 					time.Sleep(time.Millisecond * 300)
 					fmt.Println("retrying. fb:", dbConnection, "cache:", cacheConnection)
 				} else {
@@ -557,6 +577,7 @@ func InitSubSystems(cacheip string) {
 		subConf.Shadow2.SetCapacity(subConf.Shadow2.GetCapacity() + totalCapacity/100)
 	}
 
+	fmt.Println("Subsystem Initialised")
 	// make measurement channel and start reporting
 	latencyMeasurements = make(chan st.Latency, 10000000)
 	go reportLatency()
@@ -596,8 +617,13 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 		if parallelQueries < 1 {
 			parallelQueries = 1
 		}
+		// type CacheGetRes struct {
+		// 	itemMap  map[string]*memcache.Item
+		// 	cacheErr error
+		// }
 		type CacheGetRes struct {
-			itemMap  map[string]*memcache.Item
+			itemMap  map[string]string
+			values  []string
 			cacheErr error
 		}
 		cacheGetChan := make(chan CacheGetRes, parallelQueries)
@@ -605,14 +631,19 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 			// request from cache
 			for i := 0; i < parallelQueries; i++ {
 				var myids []string
+				//Redis
+				var args {}interface
 				if i == parallelQueries-1 {
 					myids = cacheQueries[(i * 10):]
 				} else {
 					myids = cacheQueries[(i * 10):((i + 1) * 10)]
 				}
 				go func(ids []string, cacheGetChan chan CacheGetRes) {
-					itemMap, err := Subs[dep].CacheClient.GetMulti(ids)
-					cacheGetChan <- CacheGetRes{itemMap, err}
+					// itemMap, err := Subs[dep].CacheClient.GetMulti(ids)
+					//Redis
+					values, err := redis.Strings(Subs[conf.Name].RedisCacheClient.Do("MGET", args...))
+					cacheGetChan <-	CacheGetRes{values, err}
+					// cacheGetChan <- CacheGetRes{itemMap, err}
 				}(myids, cacheGetChan)
 			}
 			//timeout waiting
@@ -861,3 +892,6 @@ loopLayers:
 		Cp:  slowestDepName,
 	}
 }
+
+// Redis Wrappers
+mget
