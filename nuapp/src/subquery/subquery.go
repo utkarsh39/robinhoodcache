@@ -136,6 +136,7 @@ type FbBackConn struct {
 }
 
 func (fbcon FbBackConn) Request(ids []string) (map[string][]byte, error) {
+	fmt.Println("requesting backend")
 	var err error
 	res := make(map[string][]byte)
 	// check empty ids
@@ -490,7 +491,7 @@ func InitSubSystems(cacheip string) {
 				cacheConnection := false
 				dbConnection = Subs[conf.Name].BackClient.Ping()
 				// err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
-				_, err := Subs[conf.Name].RedisCacheClient.Do("PING")
+				_, err = Subs[conf.Name].RedisCacheClient.Do("PING")
 				if err == nil {
 					cacheConnection = true
 				}
@@ -612,65 +613,73 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	var timeHit time.Time
 
 	if !BypassCaches {
-		queryCount := len(cacheQueries)
-		parallelQueries := int(queryCount / 10) // truncate
-		if parallelQueries < 1 {
-			parallelQueries = 1
-		}
+		// queryCount := len(cacheQueries)
+		// parallelQueries := int(queryCount / 10) // truncate
+		// if parallelQueries < 1 {
+		// 	parallelQueries = 1
+		// }
 		// type CacheGetRes struct {
 		// 	itemMap  map[string]*memcache.Item
 		// 	cacheErr error
 		// }
-		type CacheGetRes struct {
-			itemMap  map[string]string
-			values  []string
-			cacheErr error
-		}
-		cacheGetChan := make(chan CacheGetRes, parallelQueries)
+		// cacheGetChan := make(chan CacheGetRes, parallelQueries)
 		if Subs[dep].CacheSema.Acquire() {
 			// request from cache
-			for i := 0; i < parallelQueries; i++ {
-				var myids []string
-				//Redis
-				var args {}interface
-				if i == parallelQueries-1 {
-					myids = cacheQueries[(i * 10):]
-				} else {
-					myids = cacheQueries[(i * 10):((i + 1) * 10)]
-				}
-				go func(ids []string, cacheGetChan chan CacheGetRes) {
-					// itemMap, err := Subs[dep].CacheClient.GetMulti(ids)
-					//Redis
-					values, err := redis.Strings(Subs[conf.Name].RedisCacheClient.Do("MGET", args...))
-					cacheGetChan <-	CacheGetRes{values, err}
-					// cacheGetChan <- CacheGetRes{itemMap, err}
-				}(myids, cacheGetChan)
-			}
+			// for i := 0; i < parallelQueries; i++ {
+			// 	var myids []string
+			// 	//Redis
+			// 	var args {}interface
+			// 	if i == parallelQueries-1 {
+			// 		myids = cacheQueries[(i * 10):]
+			// 	} else {
+			// 		myids = cacheQueries[(i * 10):((i + 1) * 10)]
+			// 	}
+			// 	go func(ids []string, cacheGetChan chan CacheGetRes) {
+			// 		itemMap, err := Subs[dep].CacheClient.GetMulti(ids)
+			// 		cacheGetChan <-	CacheGetRes{values, err}
+			// 		// cacheGetChan <- CacheGetRes{itemMap, err}
+			// 	}(myids, cacheGetChan)
+			// }
+			// Query Redis with all the keys in a single multi get
+			fmt.Println("MGET ", dep)
+			values, err := MGET(Subs[dep].RedisCacheClient, cacheQueries)
+
 			//timeout waiting
-			itemMap := make(map[string]*memcache.Item)
-			var tmpRes CacheGetRes
-			retrieved := 0
-			for retrieved < parallelQueries {
-				select {
-				case tmpRes = <-cacheGetChan:
-					if tmpRes.cacheErr == nil {
-						added := 0
-						for key, item := range tmpRes.itemMap {
-							itemMap[key] = item
-							added++
-						}
+			// itemMap := make(map[string]*memcache.Item)
+			// var tmpRes CacheGetRes
+			// retrieved := 0
+			// for retrieved < parallelQueries {
+			// 	select {
+			// 	case tmpRes = <-cacheGetChan:
+			// 		if tmpRes.cacheErr == nil {
+			// 			added := 0
+			// 			for key, item := range tmpRes.itemMap {
+			// 				itemMap[key] = item
+			// 				added++
+			// 			}
+			// 		}
+			// 		if tmpRes.cacheErr == nil || tmpRes.cacheErr == memcache.ErrCacheMiss {
+			// 			retrieved++
+			// 		} else {
+			// 			fmt.Println("cache error", tmpRes.cacheErr, dep)
+			// 			break
+			// 		}
+			// 	case <-time.After(1 * time.Second):
+			// 		fmt.Println("cache timeout", dep)
+			// 		break
+			// 	}
+			// 	//                fmt.Println("waiting",retrieved,parallelQueries,len(itemMap),queryCount,dep)
+			// }
+			// Add all the key value pairs to a map
+			itemMap := make(map[string][]byte)
+			if err == nil {
+				for i := range cacheQueries {
+					if values[i] == "" {
+						itemMap[cacheQueries[i]] = []byte(values[i])
 					}
-					if tmpRes.cacheErr == nil || tmpRes.cacheErr == memcache.ErrCacheMiss {
-						retrieved++
-					} else {
-						fmt.Println("cache error", tmpRes.cacheErr, dep)
-						break
-					}
-				case <-time.After(1 * time.Second):
-					fmt.Println("cache timeout", dep)
-					break
 				}
-				//                fmt.Println("waiting",retrieved,parallelQueries,len(itemMap),queryCount,dep)
+			} else {
+				fmt.Println("cache MGET error", err, dep)
 			}
 			Subs[dep].CacheSema.Release()
 			timeHit = time.Now()
@@ -681,11 +690,12 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 				_, ok := itemMap[key]
 				if ok {
 					// cached
-					lsize := len(itemMap[key].Value)
+					lsize := len(itemMap[key])
 					if lsize < 1 {
 						fmt.Println("empty cache result", dep, realkey, lsize)
 						backQueries = append(backQueries, realkey)
 					} else {
+						fmt.Println("Cache hit")
 						realSize[realkey] = int64(lsize)
 						cacheHits[realkey] = true
 						fulfilled++
@@ -703,6 +713,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 		}
 	} else {
 		// Bypass
+		fmt.Println("Bypassing cache")
 		// -> append all queries to backendQueries
 		for _, key := range cacheQueries {
 			realkey := strings.Replace(key, dep+":", "", 1)
@@ -733,7 +744,8 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					if !BypassCaches {
 						// store in cache
 						if Subs[dep].CacheSema.Acquire() {
-							err = Subs[dep].CacheClient.Set(&memcache.Item{Key: dep + ":" + key, Value: item})
+							// err = Subs[dep].CacheClient.Set(&memcache.Item{Key: dep + ":" + key, Value: item})
+							err = SET(Subs[dep].RedisCacheClient, dep+":"+key, item)
 							Subs[dep].CacheSema.Release()
 							if err != nil {
 								fmt.Println("Cache set error", dep, err)
@@ -834,6 +846,7 @@ loopLayers:
 			_, ok := Subs[dep]
 			if ok {
 				waiting[dep] = true
+				fmt.Println("Execute subquery")
 				go ExecuteSubquery(doneDeps, dep, queries.U, queries.C, startTime)
 			}
 			// else: skip
@@ -893,5 +906,24 @@ loopLayers:
 	}
 }
 
-// Redis Wrappers
-mget
+// MGET Wrapper
+func MGET(c redis.Conn, keys []string) ([]string, error) {
+	var args []interface{}
+	for _, k := range keys {
+		args = append(args, k)
+	}
+	values, err := redis.Strings(c.Do("MGET", args...))
+	return values, err
+}
+
+//MSET Wrapper
+func MSET(c redis.Conn, keys []string, values []string) error {
+	_, err := c.Do("MSET", keys, values)
+	return err
+}
+
+//SET Wrapper
+func SET(c redis.Conn, key string, value []byte) error {
+	_, err := c.Do("SET", key, value)
+	return err
+}
