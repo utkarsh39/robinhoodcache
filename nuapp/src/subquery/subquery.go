@@ -7,7 +7,6 @@ import (
 	sq "shadowcache"
 	st "statquery"
 
-	"github.com/bradfitz/gomemcache/memcache"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
 
@@ -31,6 +30,7 @@ import (
 
 var cacheConfigPath *string = flag.String("cacheConfig", "/config/cache.json", "config file name")
 var appConfigPath *string = flag.String("appConfig", "/config/appserver.json", "config file name")
+var connectionTimeout int = 1
 
 // bypass caches
 var BypassCaches bool
@@ -88,8 +88,7 @@ type QueryLayerSlice []QueryLayer
 
 // subsystem types: caches and backend connections
 type Subsystem struct {
-	CacheClient      *memcache.Client
-	RedisCacheClient redis.Conn
+	RedisCacheClient *redis.Pool
 	CacheSema        Semaphore
 	BackClient       BackConn
 	BackSema         Semaphore
@@ -468,15 +467,10 @@ func InitSubSystems(cacheip string) {
 				var Db *sql.DB
 				Db, err = sql.Open("mysql", dbServer)
 				Check(err)
-				var c redis.Conn
-				c, err = redis.Dial("tcp", ":6379")
-				if err != nil {
-					fmt.Println("Redis connection error", conf.CacheAddr, err)
-				}
+				p := newPool(appConf.Cache.MaxConcurrentReqs, connectionTimeout)
 				Subs[conf.Name] =
 					Subsystem{
-						CacheClient:      memcache.New(conf.CacheAddr),
-						RedisCacheClient: c,
+						RedisCacheClient: p,
 						CacheSema:        NewSemaphore(appConf.Cache.MaxConcurrentReqs),
 						BackClient:       MySqlBackConn{Conn: Db, R: rand.New(rand.NewSource(123)), WriteProb: conf.WriteProb},
 						BackSema:         NewSemaphore(conf.MaxOpenConns),
@@ -484,17 +478,11 @@ func InitSubSystems(cacheip string) {
 						Shadow2:          sq.NewCache(conf.CacheSize * 1024),
 					}
 				totalCapacity += conf.CacheSize * 1024
-				Subs[conf.Name].CacheClient.Timeout = time.Second
-				Subs[conf.Name].CacheClient.MaxIdleConns = appConf.Cache.MaxConcurrentReqs
 				fmt.Println("sub", conf.Name, dbServer, conf.CachePort)
 				dbConnection := false
 				cacheConnection := false
 				dbConnection = Subs[conf.Name].BackClient.Ping()
-				// err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
-				_, err = Subs[conf.Name].RedisCacheClient.Do("PING")
-				if err == nil {
-					cacheConnection = true
-				}
+				cacheConnection = PING(p)
 				if dbConnection && cacheConnection {
 					Db.SetMaxOpenConns(appConf.Db.MaxOpenConns)
 					Db.SetMaxIdleConns(appConf.Db.MaxIdleConns)
@@ -530,16 +518,11 @@ func InitSubSystems(cacheip string) {
 					} else {
 						fpars = *conf.FbackPars
 					}
-					var c redis.Conn
-					c, err = redis.Dial("tcp", ":6379")
-					if err != nil {
-						fmt.Println("Redis connection error", conf.CacheAddr, err)
-					}
+					p := newPool(appConf.Cache.MaxConcurrentReqs, connectionTimeout)
 					// make subsystem
 					Subs[conf.Name] =
 						Subsystem{
-							CacheClient:      memcache.New(conf.CacheAddr),
-							RedisCacheClient: c,
+							RedisCacheClient: p,
 							CacheSema:        NewSemaphore(appConf.Cache.MaxConcurrentReqs),
 							BackClient:       FbBackConn{Conn: clients, Pars: fpars},
 							BackSema:         NewSemaphore(conf.MaxOpenConns),
@@ -547,19 +530,11 @@ func InitSubSystems(cacheip string) {
 							Shadow2:          sq.NewCache(conf.CacheSize * 1024),
 						}
 					totalCapacity += conf.CacheSize * 1024
-					Subs[conf.Name].CacheClient.Timeout = time.Second
-					Subs[conf.Name].CacheClient.MaxIdleConns = appConf.Cache.MaxConcurrentReqs
 					fmt.Println("sub_fb", conf.Name)
 					dbConnection := false
 					cacheConnection := false
 					dbConnection = Subs[conf.Name].BackClient.Ping()
-					// err = Subs[conf.Name].CacheClient.Set(&memcache.Item{Key: "works", Value: []byte("1")})
-					_, err := Subs[conf.Name].RedisCacheClient.Do("PING")
-					if err == nil {
-						cacheConnection = true
-					} else {
-						fmt.Println("Redis", err)
-					}
+					cacheConnection = PING(p)
 					if dbConnection && cacheConnection {
 						break
 					}
@@ -613,68 +588,17 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	var timeHit time.Time
 
 	if !BypassCaches {
-		// queryCount := len(cacheQueries)
-		// parallelQueries := int(queryCount / 10) // truncate
-		// if parallelQueries < 1 {
-		// 	parallelQueries = 1
-		// }
-		// type CacheGetRes struct {
-		// 	itemMap  map[string]*memcache.Item
-		// 	cacheErr error
-		// }
-		// cacheGetChan := make(chan CacheGetRes, parallelQueries)
 		if Subs[dep].CacheSema.Acquire() {
 			// request from cache
-			// for i := 0; i < parallelQueries; i++ {
-			// 	var myids []string
-			// 	//Redis
-			// 	var args {}interface
-			// 	if i == parallelQueries-1 {
-			// 		myids = cacheQueries[(i * 10):]
-			// 	} else {
-			// 		myids = cacheQueries[(i * 10):((i + 1) * 10)]
-			// 	}
-			// 	go func(ids []string, cacheGetChan chan CacheGetRes) {
-			// 		itemMap, err := Subs[dep].CacheClient.GetMulti(ids)
-			// 		cacheGetChan <-	CacheGetRes{values, err}
-			// 		// cacheGetChan <- CacheGetRes{itemMap, err}
-			// 	}(myids, cacheGetChan)
-			// }
 			// Query Redis with all the keys in a single multi get
-			fmt.Println("MGET ", dep)
+			fmt.Println("MGET ", dep, cacheQueries)
 			values, err := MGET(Subs[dep].RedisCacheClient, cacheQueries)
 
-			//timeout waiting
-			// itemMap := make(map[string]*memcache.Item)
-			// var tmpRes CacheGetRes
-			// retrieved := 0
-			// for retrieved < parallelQueries {
-			// 	select {
-			// 	case tmpRes = <-cacheGetChan:
-			// 		if tmpRes.cacheErr == nil {
-			// 			added := 0
-			// 			for key, item := range tmpRes.itemMap {
-			// 				itemMap[key] = item
-			// 				added++
-			// 			}
-			// 		}
-			// 		if tmpRes.cacheErr == nil || tmpRes.cacheErr == memcache.ErrCacheMiss {
-			// 			retrieved++
-			// 		} else {
-			// 			fmt.Println("cache error", tmpRes.cacheErr, dep)
-			// 			break
-			// 		}
-			// 	case <-time.After(1 * time.Second):
-			// 		fmt.Println("cache timeout", dep)
-			// 		break
-			// 	}
-			// 	//                fmt.Println("waiting",retrieved,parallelQueries,len(itemMap),queryCount,dep)
-			// }
 			// Add all the key value pairs to a map
 			itemMap := make(map[string][]byte)
 			if err == nil {
 				for i := range cacheQueries {
-					if values[i] == "" {
+					if values[i] != "" {
 						itemMap[cacheQueries[i]] = []byte(values[i])
 					}
 				}
@@ -744,7 +668,6 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					if !BypassCaches {
 						// store in cache
 						if Subs[dep].CacheSema.Acquire() {
-							// err = Subs[dep].CacheClient.Set(&memcache.Item{Key: dep + ":" + key, Value: item})
 							err = SET(Subs[dep].RedisCacheClient, dep+":"+key, item)
 							Subs[dep].CacheSema.Release()
 							if err != nil {
@@ -907,7 +830,8 @@ loopLayers:
 }
 
 // MGET Wrapper
-func MGET(c redis.Conn, keys []string) ([]string, error) {
+func MGET(p *redis.Pool, keys []string) ([]string, error) {
+	c := p.Get()
 	var args []interface{}
 	for _, k := range keys {
 		args = append(args, k)
@@ -917,13 +841,46 @@ func MGET(c redis.Conn, keys []string) ([]string, error) {
 }
 
 //MSET Wrapper
-func MSET(c redis.Conn, keys []string, values []string) error {
+func MSET(p *redis.Pool, keys []string, values []string) error {
+	c := p.Get()
 	_, err := c.Do("MSET", keys, values)
 	return err
 }
 
 //SET Wrapper
-func SET(c redis.Conn, key string, value []byte) error {
+func SET(p *redis.Pool, key string, value []byte) error {
+	c := p.Get()
 	_, err := c.Do("SET", key, value)
 	return err
+}
+
+// PING Wrapper
+func PING(p *redis.Pool) bool {
+	c := p.Get()
+	_, err := c.Do("PING")
+	if err == nil {
+		return true
+	} else {
+		fmt.Println("Redis Ping", err)
+		return false
+	}
+}
+
+//Create a pool of client connections to Redis
+func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
+	return &redis.Pool{
+		// Maximum number of idle connections in the pool.
+		MaxIdle: MaxIdleConns,
+		// Close connections after remaining idle for this duration
+		IdleTimeout: time.Duration(Timeout) * time.Second,
+		// Dial is an application supplied function for creating and
+		// configuring a connection.
+		Dial: func() (redis.Conn, error) {
+			c, err := redis.Dial("tcp", ":6379")
+			if err != nil {
+				panic(err.Error())
+			}
+			return c, err
+		},
+	}
 }
