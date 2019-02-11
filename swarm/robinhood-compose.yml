@@ -3,7 +3,7 @@ version: "3.3"
 services:
 
     nuapp:
-        image: ${registry}/nuapp
+        image: ${REPO}/nuapp
         networks:
             - overlay
         ports:
@@ -25,7 +25,7 @@ services:
                     - node.labels.data == nuapp
 
     63956c27:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -40,7 +40,7 @@ services:
                     - node.labels.data == 63956c27
 
     5b63fdf5:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -55,7 +55,7 @@ services:
                     - node.labels.data == 5b63fdf5
 
     812126d3:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -70,7 +70,7 @@ services:
                     - node.labels.data == 812126d3
 
     d6018659:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -95,7 +95,7 @@ services:
                     - node.labels.data == d6018659
 
     b4fbebd8:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -120,7 +120,7 @@ services:
                     - node.labels.data == b4fbebd8
 
     7385c12d:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         environment:
             - CONFIG
             - CONFIG_URL
@@ -145,7 +145,7 @@ services:
                     - node.labels.data == 7385c12d
 
     64c1ce15:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         environment:
             - CONFIG
             - DEBUG=${DEBUG_MYSQL}
@@ -162,7 +162,7 @@ services:
                     - node.labels.data == 64c1ce15
 
     b293d37d:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         environment:
             - CONFIG
             - CONFIG_URL
@@ -183,7 +183,7 @@ services:
                     - node.labels.data == b293d37d
 
     9ee74b0b:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         environment:
             - CONFIG
             - CONFIG_URL
@@ -210,7 +210,7 @@ services:
 
 
     39f00c48:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -237,7 +237,7 @@ services:
 
 
     e5fffc73:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -258,7 +258,7 @@ services:
                     - node.labels.data == e5fffc73
 
     1289b3bb:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -279,7 +279,7 @@ services:
                     - node.labels.data == 1289b3bb
 
     30eaf8be:
-        image: ${registry}/mysql_backend
+        image: ${REPO}/mysql_backend
         networks:
             - overlay
         volumes:
@@ -300,7 +300,7 @@ services:
                     - node.labels.data == 30eaf8be
 
     df1794e4:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -316,7 +316,7 @@ services:
                     - node.labels.data == df1794e4
 
     ac59f41b:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -332,7 +332,7 @@ services:
                     - node.labels.data == ac59f41b
 
     4607349c:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -351,7 +351,7 @@ services:
                     - node.labels.data == small
 
     6a2ef110:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -370,7 +370,7 @@ services:
                     - node.labels.data == small
 
     c1042784:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -389,7 +389,7 @@ services:
                     - node.labels.data == small
 
     e8fc6018:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -408,7 +408,7 @@ services:
                     - node.labels.data == small
 
     b02bdd0d:
-        image: ${registry}/fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -427,7 +427,7 @@ services:
                     - node.labels.data == small
 
     requestor:
-        image: ${registry}/requestor
+        image: ${REPO}/requestor
         networks:
             - overlay
         volumes:
@@ -449,7 +449,7 @@ services:
 
 
     stat_server:
-        image: ${registry}/stat_server
+        image: ${REPO}/stat_server
         networks:
             - overlay
         depends_on:
@@ -469,7 +469,7 @@ services:
                     - node.labels.data == stats
 
     monitor:
-        image: ${registry}/monitor
+        image: ${REPO}/monitor
         networks:
             - overlay
         volumes:

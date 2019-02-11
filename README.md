@@ -110,3 +110,10 @@ This software uses
   - [MySQL](https://www.mysql.com/)
   - [Our fork of pymemcache](https://github.com/bsb20/pymemcache)
   - Several Golang libraries like [Go-SQL-Driver](https://github.com/go-sql-driver/mysql) and [Gomemcache](https://github.com/bradfitz/gomemcache)
+
+Instruction for deploying to AWS:
+
+in swarm/... make managers.txt (put a # next to leader)
+in swarm/... make workers.txt
+setup ports for each instance according to (this)[https://www.digitalocean.com/community/tutorials/how-to-configure-the-linux-firewall-for-docker-swarm-on-ubuntu-16-04]
+run ./run_aws.sh
