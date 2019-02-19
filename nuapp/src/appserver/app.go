@@ -1,15 +1,15 @@
 package main
 
 import (
-	sq "subquery"
-	"net/http"
+	"encoding/json"
 	"flag"
 	"fmt"
-    "net"
 	"log"
-    "os"
-    "time"
-	"encoding/json"
+	"net"
+	"net/http"
+	"os"
+	sq "subquery"
+	"time"
 )
 
 var appServerPort *int = flag.Int("appServerPort", 80, "appServer port")
@@ -19,19 +19,19 @@ var timeouts uint64
 func JsonHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	decoder := json.NewDecoder(r.Body)
-    var req sq.JsonRequest
+	var req sq.JsonRequest
 	err := decoder.Decode(&req)
 	sq.Check(err)
-    timeStart := time.Now()
+	timeStart := time.Now()
 	go sq.ParseRequest(req.D, timeStart)
-    time.Sleep(time.Microsecond*10)
+	time.Sleep(time.Microsecond * 10)
 	fmt.Fprintln(w, 1)
 }
 
 func FlushHandler(w http.ResponseWriter, r *http.Request) {
 	for _, conf := range sq.DepConfigs {
 		sq.Subs[conf.Name].CacheSema.Acquire()
-		sq.Subs[conf.Name].CacheClient.FlushAll()
+		// sq.Subs[conf.Name].CacheClient.FlushAll()
 		sq.Subs[conf.Name].CacheSema.Release()
 		fmt.Fprintln(w, "Flushed", conf.Name)
 	}
@@ -40,7 +40,7 @@ func FlushHandler(w http.ResponseWriter, r *http.Request) {
 func IdHandler(w http.ResponseWriter, r *http.Request) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-        fmt.Fprintln(w, "fail")
+		fmt.Fprintln(w, "fail")
 		return
 	}
 	for _, iface := range ifaces {
@@ -50,13 +50,13 @@ func IdHandler(w http.ResponseWriter, r *http.Request) {
 		if iface.Flags&net.FlagLoopback != 0 {
 			continue // loopback interface
 		}
-        if iface.Name != "eth2" {
-            continue
-        }
+		if iface.Name != "eth2" {
+			continue
+		}
 		addrs, err := iface.Addrs()
 		if err != nil {
-            fmt.Fprintln(w, "fail")
-            return
+			fmt.Fprintln(w, "fail")
+			return
 		}
 		for _, addr := range addrs {
 			var ip net.IP
@@ -73,31 +73,30 @@ func IdHandler(w http.ResponseWriter, r *http.Request) {
 			if ip == nil {
 				continue // not an ipv4 address
 			}
-            //			return ip.String(), nil
-            fmt.Fprintln(w, ip.String())
-            return
+			//			return ip.String(), nil
+			fmt.Fprintln(w, ip.String())
+			return
 		}
 	}
-    fmt.Fprintln(w, "fail")
-    return
+	fmt.Fprintln(w, "fail")
+	return
 }
 
 func main() {
 	flag.Parse()
 
-    
-    value := os.Getenv("BYPASS")
-    if len(value) == 0 {
-        sq.BypassCaches = false
-    } else {
-        sq.BypassCaches = true
-    }
+	value := os.Getenv("BYPASS")
+	if len(value) == 0 {
+		sq.BypassCaches = false
+	} else {
+		sq.BypassCaches = true
+	}
 
 	sq.InitSubSystems(*cacheip)
 
 	http.HandleFunc("/json", JsonHandler)
 	http.HandleFunc("/flush", FlushHandler)
-    http.HandleFunc("/id", IdHandler)
+	http.HandleFunc("/id", IdHandler)
 	log.Fatal(
 		http.ListenAndServe(
 			fmt.Sprintf(":%d", *appServerPort),

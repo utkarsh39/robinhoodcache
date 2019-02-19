@@ -10,7 +10,8 @@ export MYSQL_DATA_URL=
 export TRACE_URL="https://github.com/dasebe/robinhoodcache/blob/master/tracegen/trace.tar.gz?raw=true"
 
 # the base URL where configs are hosted (default is our example)
-export CONFIG_URL=https://github.com/dasebe/robinhoodcache/raw/master/configs
+# export CONFIG_URL=https://github.com/dasebe/robinhoodcache/raw/master/configs
+export CONFIG_URL=https://github.com/utkarsh39/robinhoodcache/blob/redis/configs/example_mini_config.tar.gz?raw=true
 # config directory basename (default is our example)
 export CONFIG=example_config
 
@@ -19,6 +20,7 @@ export COMPOSE_FILE=example-compose.yml
 
 # per container debug flag (container will start, sleep, and user can login start service manually)
 
+# Set to 1. The container will sleep with the environment set up.
 export DEBUG_NUAPP=
 export DEBUG_MYSQL=
 export DEBUG_REQUESTOR=
