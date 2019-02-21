@@ -2,7 +2,7 @@ version: "3.3"
 
 services:
     nuapp:
-        image: nuapp
+        image: ${REPO}/nuapp
         networks:
             - overlay
         ports:
@@ -20,7 +20,7 @@ services:
             mode: global
 
     9ee74b0b:
-        image: fback
+        image: ${REPO}/fback
         environment:
             - CONFIG
             - CONFIG_URL
@@ -38,7 +38,7 @@ services:
                     memory: 10000M
 
     39f00c48:
-        image: fback
+        image: ${REPO}/fback
         networks:
             - overlay
         volumes:
@@ -56,7 +56,7 @@ services:
                     memory: 10000M
 
     requestor:
-        image: requestor
+        image: ${REPO}/requestor
         networks:
             - overlay
         volumes:
@@ -75,7 +75,7 @@ services:
 
 
     stat_server:
-        image: stat_server
+        image: ${REPO}/stat_server
         networks:
             - overlay
         depends_on:
@@ -93,7 +93,7 @@ services:
         deploy:
 
     monitor:
-        image: monitor
+        image: ${REPO}/monitor
         networks:
             - overlay
         volumes:
