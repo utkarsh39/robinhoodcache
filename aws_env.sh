@@ -10,18 +10,20 @@ export MYSQL_DATA_URL=
 export TRACE_URL="https://github.com/dasebe/robinhoodcache/blob/master/tracegen/trace.tar.gz?raw=true"
 
 # the base URL where configs are hosted (default is our example)
-export CONFIG_URL=https://github.com/dasebe/robinhoodcache/raw/master/configs
+# export CONFIG_URL=https://github.com/dasebe/robinhoodcache/raw/master/configs
+export CONFIG_URL=https://github.com/utkarsh39/robinhoodcache/blob/redis/configs/example_mini_config.tar.gz?raw=true
 # config directory basename (default is our example)
 export CONFIG=example_config
 
 #compose file name
-export COMPOSE_FILE=robinhood-compose.yml
+# export COMPOSE_FILE=robinhood-compose.yml
+export COMPOSE_FILE=example-compose.yml
 
 #aws specific flags
 export AWS_REGION="us-east-2"
 export AWS_ECR_ID="297747767471"
 export AWS_USER="ubuntu"
-export AWS_KEY_PATH="$HOME/.ssh/rh2.pem"
+export AWS_KEY_PATH="$HOME/.ssh/robinhood.pem"
 
 # per container debug flag (container will start, sleep, and user can login start service manually)
 

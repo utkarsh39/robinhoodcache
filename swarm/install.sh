@@ -1,8 +1,11 @@
 #! /bin/bash
 
-sudo addgroup --system docker
-sudo adduser $(whoami) docker
-#maybe need to enable/disable
-sudo snap install docker
-sudo ln -s /snap/bin/docker /usr/bin/docker
-sudo snap disable docker
+sudo apt update
+sudo apt-get install -y build-essential
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+sudo apt update
+sudo apt install -y docker-ce
+sudo usermod -aG docker ${USER}
+su - ${USER}

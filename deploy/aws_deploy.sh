@@ -9,6 +9,7 @@ scp -i $AWS_KEY_PATH swarm/stop_swarm.sh  $AWS_USER@$hostname:~/
 scp -i $AWS_KEY_PATH swarm/docker_attach.sh $AWS_USER@$hostname:~/
 scp -i $AWS_KEY_PATH swarm/docker_bash.sh $AWS_USER@$hostname:~/
 scp -i $AWS_KEY_PATH swarm/utils.sh $AWS_USER@$hostname:~/
+ssh -i $AWS_KEY_PATH $AWS_USER@$hostname "rm -f ~/robinhood.pem"
 scp -i $AWS_KEY_PATH $AWS_KEY_PATH $AWS_USER@$hostname:~/
 scp -i $AWS_KEY_PATH swarm/managers.txt $AWS_USER@$hostname:~/
 scp -i $AWS_KEY_PATH swarm/workers.txt $AWS_USER@$hostname:~/
