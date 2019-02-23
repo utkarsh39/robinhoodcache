@@ -11,14 +11,14 @@ do
     fi
     echo "adding manager $mgr"
     chmod 400 ~/robinhood.pem
-    scp -i ~/robinhood.pem install.sh $mgr:~/
-    ssh -i ~/robinhood.pem $mgr ./install.sh
-    ssh -i ~/robinhood.pem $mgr $ADD_MGR
+    scp -o StrictHostKeyChecking=no -i ~/robinhood.pem install.sh $mgr:~/
+    ssh -o StrictHostKeyChecking=no -i ~/robinhood.pem $mgr ./install.sh
+    ssh -o StrictHostKeyChecking=no -i ~/robinhood.pem $mgr $ADD_MGR
 done
 for worker in $(cat workers.txt)
 do
     echo "adding worker $worker"
-    scp -i ~/robinhood.pem install.sh $worker:~/
-    ssh -i ~/robinhood.pem $worker ./install.sh
-    ssh -i ~/robinhood.pem $worker $ADD_WORKER
+    scp -o StrictHostKeyChecking=no -i ~/robinhood.pem install.sh $worker:~/
+    ssh -o StrictHostKeyChecking=no -i ~/robinhood.pem $worker ./install.sh
+    ssh -o StrictHostKeyChecking=no -i ~/robinhood.pem $worker $ADD_WORKER
 done

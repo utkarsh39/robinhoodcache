@@ -42,7 +42,7 @@ export VERBOSE_STAT_SERVER=
 export BYPASS=
 
 # do not unzip compressed data files
-export SKIP_UNPACK=
+export SKIP_UNPACK=1
 
 #force redownload of data files if set to 1
 
