@@ -1,0 +1,71 @@
+# myplot.py
+from bokeh.plotting import figure, curdoc
+from bokeh.driving import linear
+import urllib, json, sys, time, datetime
+from bokeh.palettes import Dark2_5 as palette
+from bokeh.models.annotations import Title
+import itertools
+
+#colors has a list of colors which can be used in plots 
+colors = itertools.cycle(palette)
+
+url = "http://34.227.14.241:9999/getstats"
+
+p = figure(plot_width=400, plot_height=400)
+p.xaxis.axis_label = 'Time'
+p.yaxis.axis_label = 'p99 Latency'
+t = Title()
+t.text = 'p99 Latency Time Series'
+p.title = t
+ds = {}
+r = {}
+y = {}
+x = {}
+def setup():
+    while True:
+        try:
+            response = urllib.urlopen(url)
+            data = json.loads(response.read())
+            print data
+        except:
+            print "No conn"
+            time.sleep(30)
+            continue
+        for dep in data.keys():
+            try:
+                data[dep]["2"]["p99"]
+            except:
+                continue
+            print dep, data[dep]["2"]["p99"]
+            if dep not in y:
+                y[dep] = []
+                x[dep] = []
+                ln = p.line([], [], line_width=2, legend = dep, color = next(colors))
+                r[dep] = ln
+                ds[dep] = ln.data_source
+        break
+
+@linear()
+def update(step):
+    try:
+        response = urllib.urlopen(url)
+        data = json.loads(response.read())
+    except:
+        print "No conn"
+        time.sleep(30)
+        return
+    for dep in data.keys():
+        try:
+            data[dep]["2"]["p99"]
+        except:
+            continue
+        if dep in y:
+            y[dep].append(data[dep]["2"]["p99"])
+            x[dep].append(step)
+            ds[dep].data['y'] = y[dep]
+            ds[dep].data['x'] = x[dep]
+
+curdoc().add_root(p)
+setup()
+# Add a periodic callback to be run every 500 milliseconds
+curdoc().add_periodic_callback(update, 1000)
