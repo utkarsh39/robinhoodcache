@@ -19,7 +19,7 @@ services:
         deploy:
             mode: global
 
-    9ee74b0b:
+    b4fbebd8:
         image: fback
         environment:
             - CONFIG
