@@ -843,7 +843,7 @@ func MGET(p *redis.Pool, keys []string) ([]string, error) {
 //MSET Wrapper
 func MSET(p *redis.Pool, keys []string, values []string) error {
 	c := p.Get()
-	defer p.Close()
+	defer c.Close()
 	_, err := c.Do("MSET", keys, values)
 	return err
 }
@@ -851,7 +851,7 @@ func MSET(p *redis.Pool, keys []string, values []string) error {
 //SET Wrapper
 func SET(p *redis.Pool, key string, value []byte) error {
 	c := p.Get()
-	defer p.Close()
+	defer c.Close()
 	_, err := c.Do("SET", key, value)
 	return err
 }
@@ -859,7 +859,7 @@ func SET(p *redis.Pool, key string, value []byte) error {
 // PING Wrapper
 func PING(p *redis.Pool) bool {
 	c := p.Get()
-	defer p.Close()
+	defer c.Close()
 	_, err := c.Do("PING")
 	if err == nil {
 		return true
