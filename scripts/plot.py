@@ -9,9 +9,9 @@ import itertools
 #colors has a list of colors which can be used in plots 
 colors = itertools.cycle(palette)
 
-url = "http://34.227.14.241:9999/getstats"
+url = "http://3.82.69.60:9999/getstats"
 
-p = figure(plot_width=400, plot_height=400)
+p = figure(plot_width=900, plot_height=600, y_axis_type="log")
 p.xaxis.axis_label = 'Time'
 p.yaxis.axis_label = 'p99 Latency'
 t = Title()
@@ -36,7 +36,7 @@ def setup():
                 data[dep]["2"]["p99"]
             except:
                 continue
-            print dep, data[dep]["2"]["p99"]
+            # print dep, data[dep]["2"]["p99"]
             if dep not in y:
                 y[dep] = []
                 x[dep] = []
@@ -60,10 +60,20 @@ def update(step):
         except:
             continue
         if dep in y:
+            print dep, data[dep]["2"]["p99"]
             y[dep].append(data[dep]["2"]["p99"])
             x[dep].append(step)
             ds[dep].data['y'] = y[dep]
             ds[dep].data['x'] = x[dep]
+        else:
+            print dep, data[dep]["2"]["p99"]
+            y[dep] = []
+            x[dep] = []
+            y[dep].append(data[dep]["2"]["p99"])
+            x[dep].append(step)
+            ln = p.line([], [], line_width=2, legend=dep, color=next(colors))
+            r[dep] = ln
+            ds[dep] = ln.data_source
 
 curdoc().add_root(p)
 setup()
