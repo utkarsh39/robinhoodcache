@@ -879,7 +879,7 @@ func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
 		// Dial is an application supplied function for creating and
 		// configuring a connection.
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", ":6379")
+			c, err := redis.DialTimeout("tcp", ":6379", 100*time.Millisecond, 100*time.Millisecond, 100*time.Millisecond)
 			if err != nil {
 				fmt.Println("Redis Pool Dial error: ", err)
 			}
