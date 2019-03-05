@@ -13,3 +13,4 @@ src/
 bin/
 pkg/
 nuapp/bin/
+nuapp/pkg/
