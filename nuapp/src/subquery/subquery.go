@@ -832,6 +832,7 @@ loopLayers:
 // MGET Wrapper
 func MGET(p *redis.Pool, keys []string) ([]string, error) {
 	c := p.Get()
+	defer c.Close()
 	var args []interface{}
 	for _, k := range keys {
 		args = append(args, k)
