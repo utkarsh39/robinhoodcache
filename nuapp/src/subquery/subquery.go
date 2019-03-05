@@ -843,6 +843,7 @@ func MGET(p *redis.Pool, keys []string) ([]string, error) {
 //MSET Wrapper
 func MSET(p *redis.Pool, keys []string, values []string) error {
 	c := p.Get()
+	defer p.Close()
 	_, err := c.Do("MSET", keys, values)
 	return err
 }
@@ -850,6 +851,7 @@ func MSET(p *redis.Pool, keys []string, values []string) error {
 //SET Wrapper
 func SET(p *redis.Pool, key string, value []byte) error {
 	c := p.Get()
+	defer p.Close()
 	_, err := c.Do("SET", key, value)
 	return err
 }
@@ -857,6 +859,7 @@ func SET(p *redis.Pool, key string, value []byte) error {
 // PING Wrapper
 func PING(p *redis.Pool) bool {
 	c := p.Get()
+	defer p.Close()
 	_, err := c.Do("PING")
 	if err == nil {
 		return true
@@ -878,7 +881,7 @@ func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", ":6379")
 			if err != nil {
-				panic(err.Error())
+				fmt.Println("Redis Pool Dial error: ", err)
 			}
 			return c, err
 		},
