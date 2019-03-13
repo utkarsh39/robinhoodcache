@@ -18,6 +18,10 @@ tag_and_push (){
 #    ./ecr_policy.sh $1 $region
     return $?
 }
+
+cp -r configs/config go/
+cp -r configs/config nuapp/
+
 if [[ ! $1 ]]
 then
     echo "pushing all"

@@ -6,9 +6,9 @@ elif [[ ! $SKIP_UNPACK ]]
 then
     sleep 10m
 fi
-curl -L ${CONFIG_URL}/${CONFIG}.tar.gz -o ${CONFIG}.tar.gz
-tar -xzvf ${CONFIG}.tar.gz
-mv config /config
+# curl -L ${CONFIG_URL}/${CONFIG}.tar.gz -o ${CONFIG}.tar.gz
+# tar -xzvf ${CONFIG}.tar.gz
+# mv config /config
 #pushd /bootstrap
 #if [[ ! -e "./trace.json" || $DOWNLOAD ]]
 #then

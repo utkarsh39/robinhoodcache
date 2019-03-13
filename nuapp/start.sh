@@ -8,9 +8,9 @@ then
 fi
 eth0=$(ifconfig | grep eth1 -A 2 | grep "inet" | awk '{print $2}')
 pushd src
-curl -L ${CONFIG_URL}/${CONFIG}.tar.gz -o ${CONFIG}.tar.gz
-tar -xzvf ${CONFIG}.tar.gz
-mv config /config
+# curl -L ${CONFIG_URL}/${CONFIG}.tar.gz -o ${CONFIG}.tar.gz
+# tar -xzvf ${CONFIG}.tar.gz
+# mv config /config
 rm -f redis.conf
 touch redis.conf
 echo "maxmemory 500mb" >> redis.conf
