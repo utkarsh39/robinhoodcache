@@ -5,15 +5,15 @@ import urllib, json, sys, time, datetime
 from bokeh.palettes import Dark2_5 as palette
 from bokeh.models.annotations import Title
 import itertools
-
+import sys
 #colors has a list of colors which can be used in plots 
 colors = itertools.cycle(palette)
-
-url = "http://3.82.69.60:9999/getstats"
+ip = sys.argv[1]
+url = "http://" + ip + ":9999/getstats"
 
 p = figure(plot_width=900, plot_height=600, y_axis_type="log")
 p.xaxis.axis_label = 'Time'
-p.yaxis.axis_label = 'p99 Latency'
+p.yaxis.axis_label = 'p99 Latency (in ms)'
 t = Title()
 t.text = 'p99 Latency Time Series'
 p.title = t
@@ -59,17 +59,18 @@ def update(step):
             data[dep]["2"]["p99"]
         except:
             continue
+        d = data[dep]["2"]["p99"]/1e6
         if dep in y:
-            print dep, data[dep]["2"]["p99"]
-            y[dep].append(data[dep]["2"]["p99"])
+            print dep, d
+            y[dep].append(d)
             x[dep].append(step)
             ds[dep].data['y'] = y[dep]
             ds[dep].data['x'] = x[dep]
         else:
-            print dep, data[dep]["2"]["p99"]
+            print dep, d
             y[dep] = []
             x[dep] = []
-            y[dep].append(data[dep]["2"]["p99"])
+            y[dep].append(d)
             x[dep].append(step)
             ln = p.line([], [], line_width=2, legend=dep, color=next(colors))
             r[dep] = ln
