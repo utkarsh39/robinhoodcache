@@ -1,0 +1,9 @@
+{
+    "HttpMaxConcurrentReqs": 50,
+    "HttpMaxIdleConns": 50,
+    "TraceFilename": "/bootstrap/trace.json",
+    "WarmupLambda": 200,
+    "WarmupRequests": 10000,
+    "ExperimentLambda": 400,
+    "ExperimentRequests": 900000
+}

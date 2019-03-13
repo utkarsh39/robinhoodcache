@@ -1,0 +1,34 @@
+ [
+ {
+  "BackendUrl": "robinhood_39f00c48", 
+  "BackendType": "fb", 
+  "WriteProb": 0,
+  "Name": "39f00c48", 
+  "MaxOpenConns": 15,
+  "CacheAddr": "127.0.0.1",
+  "CachePort": 27001,
+  "CacheSize": 1600,
+  "FbackPars": {
+    "Hardness": 400,
+    "IdCount": 1,
+    "SizeLower": 7,
+    "SizeUpper": 16
+  }
+ },
+{
+  "BackendUrl": "robinhood_b4fbebd8", 
+  "BackendType": "fb", 
+  "WriteProb": 0,
+  "Name": "b4fbebd8", 
+  "MaxOpenConns": 15,
+  "CacheAddr": "127.0.0.1",
+  "CachePort": 27005,
+  "CacheSize": 1600,
+  "FbackPars": {
+    "Hardness": 425,
+    "IdCount": 1,
+    "SizeLower": 10,
+    "SizeUpper": 19
+  }
+ }
+]
