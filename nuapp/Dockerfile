@@ -22,6 +22,10 @@ RUN echo $PATH
 ADD ./src /nuapp/src
 ADD ./start.sh /nuapp/start.sh
 
+
+WORKDIR /config
+COPY ./config .
+
 WORKDIR /nuapp
 
 # src has to be subdir

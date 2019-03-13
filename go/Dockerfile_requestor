@@ -11,6 +11,12 @@ WORKDIR /go/src/requestor
 RUN go-wrapper download requestor   # "go get -d -v ./..."
 RUN go-wrapper install requestor   # "go install -v ./..."
 
+WORKDIR /boot
+COPY ./trace.json  .
+
+WORKDIR /config
+COPY ./config .
+
 WORKDIR /go/src
 
 CMD ./start_requestor.sh
