@@ -1,0 +1,15 @@
+{
+    "Cache" : {
+        "MaxConcurrentReqs": 5000
+    },
+    "Fb": {
+        "MaxConcurrentReqs": 500
+    },
+    "Db": {
+        "User": "root",
+        "Passwd": "test",
+        "Name": "robinhood",
+        "MaxOpenConns": 20,
+        "MaxIdleConns": 20
+    }
+}

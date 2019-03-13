@@ -1,0 +1,6 @@
+{
+    "StepSizePerc": 0.01,
+    "IntervalSec": 1,
+    "Algorithm": "crit_path",
+    "WarmupSeconds": 180
+}
