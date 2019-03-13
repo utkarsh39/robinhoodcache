@@ -189,8 +189,10 @@ func LoadGenerator(RequestorConfig requestorConfig) {
 
 	f, err := os.Open(RequestorConfig.TraceFilename)
 	Check(err)
-    scanner := bufio.NewScanner(f)
-    
+	scanner := bufio.NewScanner(f)
+	buf := make([]byte, 0, 64*1024)
+	scanner.Buffer(buf, 1024*1024)
+	
 	// Main loop
 	warmupDist := &Exponential{RequestorConfig.WarmupLambda}
     expDist := &Exponential{RequestorConfig.ExperimentLambda}
@@ -200,7 +202,7 @@ func LoadGenerator(RequestorConfig requestorConfig) {
     printCounter := 0
     var i int64
 	for i = 0; scanner.Scan() && i < RequestorConfig.WarmupRequests + RequestorConfig.ExperimentRequests; i++ {
-        if i==RequestorConfig.WarmupRequests {
+	if i==RequestorConfig.WarmupRequests {
             dist = expDist
         }
 		time.Sleep(time.Until(reqStartTime))
@@ -229,7 +231,6 @@ func LoadGenerator(RequestorConfig requestorConfig) {
         }
         printCounter++
 	}
-
 	// Wait for completion
     fmt.Println("done sending", schedCount, sentCount)
 	wg.Wait()
