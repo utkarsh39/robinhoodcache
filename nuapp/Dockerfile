@@ -12,7 +12,7 @@ RUN git clone https://github.com/utkarsh39/redis.git
 RUN cd redis && git checkout group_get
 RUN cd redis && make && make install
 RUN mkdir /etc/redis
-RUN cp /tmp/redis-stable/redis.conf /etc/redis
+RUN cp redis/redis.conf /etc/redis
 
 RUN cd /usr/local && curl -O https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
 RUN cd /usr/local && tar -xvf go1.8.linux-amd64.tar.gz
