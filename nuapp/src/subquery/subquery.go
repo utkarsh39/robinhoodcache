@@ -8,7 +8,7 @@ import (
 	st "statquery"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/mediocregopher/radix"
+	"github.com/mediocregopher/radix.v2/pool"
 
 	//    "net"
 	"bufio"
@@ -88,7 +88,7 @@ type QueryLayerSlice []QueryLayer
 
 // subsystem types: caches and backend connections
 type Subsystem struct {
-	RedisCacheClient *redis.Pool
+	RedisCacheClient *pool.Pool
 	CacheSema        Semaphore
 	BackClient       BackConn
 	BackSema         Semaphore
@@ -830,52 +830,44 @@ loopLayers:
 }
 
 // MGET Wrapper
-func MGET(p *radix.Pool, keys []string) ([]string, error) {
-	c := p.Get()
+func MGET(p *pool.Pool, keys []string) ([]string, error) {
+	c, _ := p.Get()
 	defer p.Put(c)
 	var args []interface{}
 	for _, k := range keys {
 		args = append(args, k)
 	}
-	values, err := conn.Cmd("MGET", keys).List()
+	values, err := c.Cmd("MGET", keys).List()
 	return values, err
-	// return nil, errors.New("MGET")
 }
 
 //MSET Wrapper
-func MSET(p *radix.Pool, keys []string, values []string) error {
-	c := p.Get()
+func MSET(p *pool.Pool, keys []string, values []string) error {
+	c, _ := p.Get()
 	defer p.Put(c)
-	_, err := conn.Cmd("MSET", keys, values)
-	return err
-	// return errors.New("MSET")
+	c.Cmd("MSET", keys, values)
+	return nil
 }
 
 //SET Wrapper
-func SET(p *radix.Pool, key string, value []byte) error {
-	c := p.Get()
+func SET(p *pool.Pool, key string, value []byte) error {
+	c, _ := p.Get()
 	defer p.Put(c)
-	_, err := conn.Cmd("SET", key, value)
-	return err
-	// return errors.New("SET")
+	c.Cmd("SET", key, value)
+	return nil
 }
 
 // PING Wrapper
-func PING(p *radix.Pool) bool {
-	c := p.Get()
+func PING(p *pool.Pool) bool {
+	c, _ := p.Get()
 	defer p.Put(c)
-	_, err := conn.Cmd("PING")
-	if err == nil {
-		return true
-	} else {
-		fmt.Println("Redis Ping", err)
-		return false
-	}
+	c.Cmd("PING")
+	return true
 }
 
 //Create a pool of client connections to Redis
-func newPool(MaxIdleConns int, Timeout int) *radix.Pool {
-	p, _ = radix.NewPool("tcp", ":6379", 1000)
+func newPool(MaxIdleConns int, Timeout int) *pool.Pool {
+	p, _ := pool.New("tcp", ":6379", 1000)
 	return p
 }
 
