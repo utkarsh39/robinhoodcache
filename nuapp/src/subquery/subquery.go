@@ -8,7 +8,7 @@ import (
 	st "statquery"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gomodule/redigo/redis"
+	"github.com/mediocregopher/radix"
 
 	//    "net"
 	"bufio"
@@ -30,7 +30,7 @@ import (
 
 var cacheConfigPath *string = flag.String("cacheConfig", "/config/cache.json", "config file name")
 var appConfigPath *string = flag.String("appConfig", "/config/appserver.json", "config file name")
-var connectionTimeout int = 10
+var connectionTimeout int = 1
 
 // bypass caches
 var BypassCaches bool
@@ -830,38 +830,41 @@ loopLayers:
 }
 
 // MGET Wrapper
-func MGET(p *redis.Pool, keys []string) ([]string, error) {
+func MGET(p *radix.Pool, keys []string) ([]string, error) {
 	c := p.Get()
-	defer c.Close()
+	defer p.Put(c)
 	var args []interface{}
 	for _, k := range keys {
 		args = append(args, k)
 	}
-	values, err := redis.Strings(c.Do("MGET", args...))
+	values, err := conn.Cmd("MGET", keys).List()
 	return values, err
+	// return nil, errors.New("MGET")
 }
 
 //MSET Wrapper
-func MSET(p *redis.Pool, keys []string, values []string) error {
+func MSET(p *radix.Pool, keys []string, values []string) error {
 	c := p.Get()
-	defer c.Close()
-	_, err := c.Do("MSET", keys, values)
+	defer p.Put(c)
+	_, err := conn.Cmd("MSET", keys, values)
 	return err
+	// return errors.New("MSET")
 }
 
 //SET Wrapper
-func SET(p *redis.Pool, key string, value []byte) error {
+func SET(p *radix.Pool, key string, value []byte) error {
 	c := p.Get()
-	defer c.Close()
-	_, err := c.Do("SET", key, value)
+	defer p.Put(c)
+	_, err := conn.Cmd("SET", key, value)
 	return err
+	// return errors.New("SET")
 }
 
 // PING Wrapper
-func PING(p *redis.Pool) bool {
+func PING(p *radix.Pool) bool {
 	c := p.Get()
-	defer c.Close()
-	_, err := c.Do("PING")
+	defer p.Put(c)
+	_, err := conn.Cmd("PING")
 	if err == nil {
 		return true
 	} else {
@@ -871,20 +874,8 @@ func PING(p *redis.Pool) bool {
 }
 
 //Create a pool of client connections to Redis
-func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
-	return &redis.Pool{
-		// Maximum number of idle connections in the pool.
-		MaxIdle: MaxIdleConns*10,
-		// Close connections after remaining idle for this duration
-		IdleTimeout: time.Duration(Timeout) * time.Second,
-		// Dial is an application supplied function for creating and
-		// configuring a connection.
-		Dial: func() (redis.Conn, error) {
-			c, err := redis.DialTimeout("tcp", ":6379", 10*time.Second, 10*time.Second, 10*time.Second)
-			if err != nil {
-				fmt.Println("Redis Pool Dial error: ", err)
-			}
-			return c, err
-		},
-	}
+func newPool(MaxIdleConns int, Timeout int) *radix.Pool {
+	p, _ = radix.NewPool("tcp", ":6379", 1000)
+	return p
 }
+
