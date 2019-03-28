@@ -661,23 +661,26 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 			timeMiss = time.Now()
 			// only continue if no error
 			if err == nil {
+				queries := make([]string, 0)
 				//fmt.Println("Backend success", dep, key, len(bytes))
 				for key, item := range vals {
 					realSize[key] = int64(len(item))
 					fulfilled++
-					if !BypassCaches {
-						// store in cache
-						if Subs[dep].CacheSema.Acquire() {
-							err = SET(Subs[dep].RedisCacheClient, dep+":"+key, item)
-							Subs[dep].CacheSema.Release()
-							if err != nil {
-								fmt.Println("Cache set error", dep, err)
-								hasError = true
-							}
-						} else {
-							fmt.Println("Cache set timed out", dep)
+					queries = append(queries, dep+":"+key)
+					queries = append(queries, string(item))
+				}
+				if !BypassCaches {
+					// store in cache
+					if Subs[dep].CacheSema.Acquire() {
+						err = MSET(Subs[dep].RedisCacheClient, queries)
+						Subs[dep].CacheSema.Release()
+						if err != nil {
+							fmt.Println("Cache set error", dep, err)
 							hasError = true
 						}
+					} else {
+						fmt.Println("Cache set timed out", dep)
+						hasError = true
 					}
 				}
 			} else {
@@ -838,14 +841,19 @@ func MGET(p *redis.Pool, keys []string) ([]string, error) {
 		args = append(args, k)
 	}
 	values, err := redis.Strings(c.Do("MGET", args...))
+	fmt.Println(p.Stats())
 	return values, err
 }
 
 //MSET Wrapper
-func MSET(p *redis.Pool, keys []string, values []string) error {
+func MSET(p *redis.Pool, key_value_list []string) error {
 	c := p.Get()
 	defer c.Close()
-	_, err := c.Do("MSET", keys, values)
+	var args []interface{}
+	for _, k := range key_value_list {
+		args = append(args, k)
+	}
+	_, err := c.Do("MSET", args...)
 	return err
 }
 
@@ -854,6 +862,7 @@ func SET(p *redis.Pool, key string, value []byte) error {
 	c := p.Get()
 	defer c.Close()
 	_, err := c.Do("SET", key, value)
+	fmt.Println(p.Stats())
 	return err
 }
 
@@ -874,9 +883,11 @@ func PING(p *redis.Pool) bool {
 func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
 	return &redis.Pool{
 		// Maximum number of idle connections in the pool.
-		MaxIdle: MaxIdleConns*10,
+		MaxIdle: 50,
 		// Close connections after remaining idle for this duration
-		IdleTimeout: time.Duration(Timeout) * time.Second,
+		IdleTimeout: time.Second,
+		MaxActive: 2000,
+		Wait: false,
 		// Dial is an application supplied function for creating and
 		// configuring a connection.
 		Dial: func() (redis.Conn, error) {
