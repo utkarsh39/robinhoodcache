@@ -135,7 +135,7 @@ type FbBackConn struct {
 }
 
 func (fbcon FbBackConn) Request(ids []string) (map[string][]byte, error) {
-	fmt.Println("requesting backend")
+	// fmt.Println("requesting backend")
 	var err error
 	res := make(map[string][]byte)
 	// check empty ids
@@ -591,7 +591,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 		if Subs[dep].CacheSema.Acquire() {
 			// request from cache
 			// Query Redis with all the keys in a single multi get
-			fmt.Println("MGET ", dep, cacheQueries)
+			// fmt.Println("MGET ", dep, cacheQueries)
 			values, err := MGET(Subs[dep].RedisCacheClient, cacheQueries)
 
 			// Add all the key value pairs to a map
@@ -619,7 +619,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 						fmt.Println("empty cache result", dep, realkey, lsize)
 						backQueries = append(backQueries, realkey)
 					} else {
-						fmt.Println("Cache hit")
+						// fmt.Println("Cache hit")
 						realSize[realkey] = int64(lsize)
 						cacheHits[realkey] = true
 						fulfilled++
@@ -772,7 +772,7 @@ loopLayers:
 			_, ok := Subs[dep]
 			if ok {
 				waiting[dep] = true
-				fmt.Println("Execute subquery")
+				// fmt.Println("Execute subquery")
 				go ExecuteSubquery(doneDeps, dep, queries.U, queries.C, startTime)
 			}
 			// else: skip
@@ -841,7 +841,7 @@ func MGET(p *redis.Pool, keys []string) ([]string, error) {
 		args = append(args, k)
 	}
 	values, err := redis.Strings(c.Do("MGET", args...))
-	fmt.Println(p.Stats())
+	// fmt.Println(p.Stats())
 	return values, err
 }
 
@@ -862,7 +862,7 @@ func SET(p *redis.Pool, key string, value []byte) error {
 	c := p.Get()
 	defer c.Close()
 	_, err := c.Do("SET", key, value)
-	fmt.Println(p.Stats())
+	// fmt.Println(p.Stats())
 	return err
 }
 
@@ -883,11 +883,11 @@ func PING(p *redis.Pool) bool {
 func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
 	return &redis.Pool{
 		// Maximum number of idle connections in the pool.
-		MaxIdle: 50,
+		MaxIdle: 2000,
 		// Close connections after remaining idle for this duration
 		IdleTimeout: time.Second,
 		MaxActive: 2000,
-		Wait: false,
+		Wait: true,
 		// Dial is an application supplied function for creating and
 		// configuring a connection.
 		Dial: func() (redis.Conn, error) {
@@ -897,5 +897,9 @@ func newPool(MaxIdleConns int, Timeout int) *redis.Pool {
 			}
 			return c, err
 		},
+		TestOnBorrow: func(c redis.Conn, t time.Time) error {
+            _, err := c.Do("PING")
+            return err
+        },
 	}
 }
