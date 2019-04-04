@@ -9,7 +9,7 @@
   "CachePort": 27001,
   "CacheSize": 1600,
   "FbackPars": {
-    "Hardness": 400,
+    "Hardness": 1,
     "IdCount": 1,
     "SizeLower": 7,
     "SizeUpper": 16
@@ -25,7 +25,7 @@
   "CachePort": 27005,
   "CacheSize": 1600,
   "FbackPars": {
-    "Hardness": 425,
+    "Hardness": 1,
     "IdCount": 1,
     "SizeLower": 10,
     "SizeUpper": 19
