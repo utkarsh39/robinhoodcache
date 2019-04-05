@@ -13,7 +13,7 @@ pushd src
 # mv config /config
 rm -f redis.conf
 touch redis.conf
-echo "maxmemory 1gb" >> redis.conf
+echo "maxmemory 8gb" >> redis.conf
 echo "maxmemory-samples 5" >> redis.conf
 echo "maxmemory-policy allkeys-lru" >> redis.conf
 echo "appendonly no" >> redis.conf
