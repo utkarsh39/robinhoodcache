@@ -4,6 +4,6 @@
     "TraceFilename": "/bootstrap/trace.json",
     "WarmupLambda": 500,
     "WarmupRequests": 10000,
-    "ExperimentLambda": 600,
+    "ExperimentLambda": 350,
     "ExperimentRequests": 2000000
 }
