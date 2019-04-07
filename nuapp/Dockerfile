@@ -7,12 +7,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 RUN apt-get -qq install -y git curl socat net-tools emacs-nox tar procps
 RUN apt-get -qq install -y build-essential tcl
-WORKDIR /tmp
-RUN git clone https://github.com/utkarsh39/redis.git
-RUN cd redis && git checkout group_get
-RUN cd redis && make && make install
+WORKDIR /tmp/redis
+COPY ./redis .
+RUN cd /tmp/redis && make && make install
 RUN mkdir /etc/redis
-RUN cp redis/redis.conf /etc/redis
+RUN cp /tmp/redis/redis.conf /etc/redis
+
+# WORKDIR /tmp
+# RUN git clone https://github.com/utkarsh39/redis.git
+# RUN cd redis && git checkout group_get_dev
+# RUN cd redis && make && make install
+# RUN mkdir /etc/redis
+# RUN cp redis/redis.conf /etc/redis
 
 RUN cd /usr/local && curl -O https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz
 RUN cd /usr/local && tar -xvf go1.8.linux-amd64.tar.gz

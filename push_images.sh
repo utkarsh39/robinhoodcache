@@ -21,6 +21,7 @@ tag_and_push (){
 
 cp -r configs/config go/
 cp -r configs/config nuapp/
+cp -r ../redis nuapp/
 
 if [[ ! $1 ]]
 then
