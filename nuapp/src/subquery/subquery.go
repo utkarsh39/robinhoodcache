@@ -581,7 +581,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	}
 	fulfilled := 0
 	backQueries := make([]string, 0)
-
+	hitQueries := make([]string, 0)
 	/*
 	   request from cache
 	*/
@@ -591,8 +591,8 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 		if Subs[dep].CacheSema.Acquire() {
 			// request from cache
 			// Query Redis with all the keys in a single multi get
-			// fmt.Println("MGET ", dep, cacheQueries)
-			values, err := MGET(Subs[dep].RedisCacheClient, cacheQueries)
+			// fmt.Println("GGET ", dep, cacheQueries)
+			values, err := GGET(Subs[dep].RedisCacheClient, cacheQueries)
 
 			// Add all the key value pairs to a map
 			itemMap := make(map[string][]byte)
@@ -611,7 +611,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 			for _, key := range cacheQueries {
 				realkey := strings.Replace(key, dep+":", "", 1)
 				// check if in cache results
-				_, ok := itemMap[key]
+				val, ok := itemMap[key]
 				if ok {
 					// cached
 					lsize := len(itemMap[key])
@@ -624,7 +624,10 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 						cacheHits[realkey] = true
 						fulfilled++
 					}
+					hitQueries = append(hitQueries, key)
+					hitQueries = append(hitQueries, string(val))
 				} else {
+					// Cache Miss
 					backQueries = append(backQueries, realkey)
 				}
 
@@ -664,15 +667,21 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 				queries := make([]string, 0)
 				//fmt.Println("Backend success", dep, key, len(bytes))
 				for key, item := range vals {
+					// Setting values requested from backend
 					realSize[key] = int64(len(item))
 					fulfilled++
 					queries = append(queries, dep+":"+key)
 					queries = append(queries, string(item))
 				}
+				// Setting the remaining keys to be empty as they were cache
+				// hit but need to be specified as a part of the group
+				queries = append(queries, hitQueries...)
+
 				if !BypassCaches {
 					// store in cache
 					if Subs[dep].CacheSema.Acquire() {
-						err = MSET(Subs[dep].RedisCacheClient, queries)
+						// fmt.Println("GSET ", dep, queries)
+						err = GSET(Subs[dep].RedisCacheClient, queries)
 						Subs[dep].CacheSema.Release()
 						if err != nil {
 							fmt.Println("Cache set error", dep, err)
@@ -832,28 +841,28 @@ loopLayers:
 	}
 }
 
-// MGET Wrapper
-func MGET(p *redis.Pool, keys []string) ([]string, error) {
+// GGET Wrapper
+func GGET(p *redis.Pool, keys []string) ([]string, error) {
 	c := p.Get()
 	defer c.Close()
 	var args []interface{}
 	for _, k := range keys {
 		args = append(args, k)
 	}
-	values, err := redis.Strings(c.Do("MGET", args...))
+	values, err := redis.Strings(c.Do("GGET", args...))
 	// fmt.Println(p.Stats())
 	return values, err
 }
 
-//MSET Wrapper
-func MSET(p *redis.Pool, key_value_list []string) error {
+//GSET Wrapper
+func GSET(p *redis.Pool, key_value_list []string) error {
 	c := p.Get()
 	defer c.Close()
 	var args []interface{}
 	for _, k := range key_value_list {
 		args = append(args, k)
 	}
-	_, err := c.Do("MSET", args...)
+	_, err := c.Do("GSET", args...)
 	return err
 }
 
