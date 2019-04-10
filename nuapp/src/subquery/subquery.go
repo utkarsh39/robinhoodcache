@@ -7,7 +7,6 @@ import (
 	sq "shadowcache"
 	st "statquery"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
 
 	//    "net"
