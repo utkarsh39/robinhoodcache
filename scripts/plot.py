@@ -1,11 +1,14 @@
 # myplot.py
 from bokeh.plotting import figure, curdoc
 from bokeh.driving import linear
-from bokeh.io import show
-from bokeh.layouts import row
+from bokeh.io import show, export_png, export_svgs
+from bokeh.layouts import row, widgetbox
 import urllib, json, sys, time, datetime
 from bokeh.palettes import Dark2_5 as palette
 from bokeh.models.annotations import Title
+from bokeh.models.widgets import Dropdown
+import time;
+
 import itertools
 import sys
 #colors has a list of colors which can be used in plots 
@@ -121,7 +124,23 @@ def update(step, ds, r, y, x, p, func):
             r[dep] = ln
             ds[dep] = ln.data_source
 
-curdoc().add_root(row(p_p99, p_hit))
+menu = [("PNG", "png"), ("SVG", "svg")]
+save_drop = Dropdown(label="Save as:", button_type="warning", menu=menu)
+
+def save_handler(attr, old, new):
+    localtime = localtime = time.asctime( time.localtime(time.time()))
+    if new == 'png':
+        export_png(p_p99, filename="p99_%s.png" % str(localtime))
+        export_png(p_hit, filename="req_%s.png" % str(localtime))
+    elif  new == 'svg':
+        p_p99.output_backend = "svg"
+        p_hit.output_backend = "svg"
+        export_svgs(p_p99, filename="p99_%s.svg"  % str(localtime))
+        export_svgs(p_hit, filename="req_%s.svg" % str(localtime))
+
+save_drop.on_change('value', save_handler)
+
+curdoc().add_root(row(p_p99, p_hit, widgetbox(save_drop)))
 setup_p99()
 setup_hit()
 # Add a periodic callback to be run every 500 milliseconds
