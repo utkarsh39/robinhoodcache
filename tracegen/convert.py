@@ -1,3 +1,4 @@
+#This code works in Python2
 import json
 import csv
 import random
@@ -17,7 +18,8 @@ backtoid = {}
 t = 0
 keyspace = {}
 req_dist = {}
-
+max_keys = {}
+keys_in_bins = {}
 numlines = int(sys.argv[2])
 with open(sys.argv[1]) as df:
     for line in df:
@@ -40,8 +42,8 @@ with open(sys.argv[1]) as df:
             else:
                 keyspace[query["uri"]] += 1
         # print json.dumps(base)
-        # Find number of requests having requests more than a threshold contained within them 
-        binsize = 20000
+        # Find number of requests having requests more than a threshold contained within them
+        binsize = 5000
         threshold = 50
         if num_keys > threshold:
             tmp = t/binsize
@@ -49,23 +51,44 @@ with open(sys.argv[1]) as df:
                 req_dist[tmp] += 1
             else:
                 req_dist[tmp] = 1
+        tmp = t/binsize
+
+        if tmp in max_keys:
+            max_keys[tmp] = max(max_keys[tmp], num_keys)
+        else:
+            max_keys[tmp] = num_keys
+
+        if tmp in keys_in_bins:
+            keys_in_bins[tmp] += num_keys
+        else:
+            keys_in_bins[tmp] = 0
+
         t += 1
         if t > numlines:
             break
 
-plot_dict = {}
-for key in req_dist:
-    plot_dict[key*20] = req_dist[key]
-    
-lists = sorted(plot_dict.items()) # sorted by key, return a list of tuples
+def plot_dict(d, title):
 
-x, y = zip(*lists) # unpack a list of pairs into two tuples
+    pdict = {}
+    for key in d:
+        pdict[key*binsize/1000] = d[key]
+        
+    lists = sorted(pdict.items()) # sorted by key, return a list of tuples
 
-plt.plot(x, y)
-plt.title('Request Size Distribution for requests containing more than ' + str(threshold) + ' keys\n' +
+    x, y = zip(*lists) # unpack a list of pairs into two tuples
+
+    plt.plot(x, y)
+    plt.title(title)
+    plt.figure()
+
+plot_dict(req_dist, 'Request Size Distribution for requests containing more than '
+          + str(threshold) + ' keys\n' + 'for first ' + str(numlines)
+          + ' requests')
+            
+plot_dict(max_keys, 'Max Keys Distribution\n' +
           'for first ' + str(numlines) + ' requests')
+
+plot_dict(keys_in_bins, 'Total keys requested\n' +
+          'for first ' + str(numlines) + ' requests')
+
 plt.show()
-
-
-# maxkey = max(keyspace.iteritems(), key=operator.itemgetter(1))[0]
-# print key /space[maxkey]
