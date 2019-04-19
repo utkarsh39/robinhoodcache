@@ -244,9 +244,23 @@ func RecomputeStats(sleepPeriod time.Duration) {
                 perctmp["p98.5"] = SortedPercentile(lats,0.985)
                 perctmp["p95"] = SortedPercentile(lats,0.95)
                 perctmp["p90"] = SortedPercentile(lats,0.90)
+                perctmp["p85"] = SortedPercentile(lats,0.85)
+                perctmp["p80"] = SortedPercentile(lats,0.80)
                 perctmp["p75"] = SortedPercentile(lats,0.75)
+                perctmp["p70"] = SortedPercentile(lats,0.70)
+                perctmp["p65"] = SortedPercentile(lats,0.65)
+                perctmp["p60"] = SortedPercentile(lats,0.60)
+                perctmp["p55"] = SortedPercentile(lats,0.55)
                 perctmp["p50"] = SortedPercentile(lats,0.50)
+                perctmp["p45"] = SortedPercentile(lats,0.45)
+                perctmp["p40"] = SortedPercentile(lats,0.40)
+                perctmp["p35"] = SortedPercentile(lats,0.35)
+                perctmp["p30"] = SortedPercentile(lats,0.30)
                 perctmp["p25"] = SortedPercentile(lats,0.25)
+                perctmp["p20"] = SortedPercentile(lats,0.20)
+                perctmp["p15"] = SortedPercentile(lats,0.15)
+                perctmp["p10"] = SortedPercentile(lats,0.10)
+                perctmp["p05"] = SortedPercentile(lats,0.05)
                 if st == 2 {
                     if _, ok := copiedMemStat[tp]; ok {
                         perctmp["memlimit"] = copiedMemStat[tp].Limits
