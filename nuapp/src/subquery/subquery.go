@@ -611,7 +611,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 			for _, key := range cacheQueries {
 				realkey := strings.Replace(key, dep+":", "", 1)
 				// check if in cache results
-				val, ok := itemMap[key]
+				_, ok := itemMap[key]
 				if ok {
 					// cached
 					lsize := len(itemMap[key])
@@ -624,8 +624,10 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 						cacheHits[realkey] = true
 						fulfilled++
 					}
+					// For keys that were a hit we senf them as a part of the group
+					// but they have a reserved value "GSET" so that the cache ignores them
 					hitQueries = append(hitQueries, key)
-					hitQueries = append(hitQueries, string(val))
+					hitQueries = append(hitQueries, "GSET")
 				} else {
 					// Cache Miss
 					backQueries = append(backQueries, realkey)
