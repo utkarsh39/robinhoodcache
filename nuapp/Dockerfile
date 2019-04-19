@@ -9,7 +9,7 @@ RUN apt-get -qq install -y git curl socat net-tools emacs-nox tar procps
 RUN apt-get -qq install -y build-essential tcl
 WORKDIR /tmp/redis
 COPY ./redis .
-RUN cd /tmp/redis && make clean && make MALLOC=jemalloc && make install
+RUN cd /tmp/redis && make MALLOC=jemalloc && make install
 RUN mkdir /etc/redis
 RUN cp /tmp/redis/redis.conf /etc/redis
 
