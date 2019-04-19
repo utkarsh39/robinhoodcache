@@ -18,9 +18,9 @@ echo "maxmemory-samples 5" >> redis.conf
 echo "maxmemory-policy allkeys-lru" >> redis.conf
 echo "appendonly no" >> redis.conf
 echo "save \"\"" >> redis.conf
-echo "loglevel verbose" >> redis.conf
-rm -f /logs/redis_log
-echo "logfile \"/logs/redis_log\"" >> redis.conf
+# echo "loglevel debug" >> redis.conf
+# rm -f /logs/redis_log
+# echo "logfile \"/logs/redis_log\"" >> redis.conf
 redis-server redis.conf&
 # ./start_controller.sh ${eth0} &
 ./start_cache.sh ${eth0} &
