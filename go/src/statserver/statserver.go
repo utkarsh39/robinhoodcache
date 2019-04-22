@@ -34,7 +34,8 @@ func Check(err error) {
 // latency stats
 var statStream chan st.Results
 var csvStream chan st.Results
-var latencyRing [10000000]st.Latency
+// var latencyRing [10000000]st.Latency
+var latencyRing [100000]st.Latency
 var requestRate float64
 var queryRate float64
 var totalReqs map[string]int64
