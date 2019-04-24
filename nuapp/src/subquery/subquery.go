@@ -654,6 +654,10 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	   request from backend
 	*/
 	var timeMiss time.Time = timeHit
+	setSize := 0
+	expectedSize := (Subs[dep].BackClient.pars.SizeLower + Subs[dep].BackClient.pars.SizeUpper)/2
+	expectedKeys := 10
+	threshold := expectedKeys*(1 << uint32(expectedSize))
 
 	// check cache which items
 	if !hasError && len(backQueries) > 0 {
@@ -674,12 +678,13 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					fulfilled++
 					queries = append(queries, dep+":"+key)
 					queries = append(queries, string(item))
+					setSize += int64(len(item))
 				}
 				// Setting the remaining keys to be empty as they were cache
 				// hit but need to be specified as a part of the group
 				queries = append(queries, hitQueries...)
 
-				if !BypassCaches {
+				if !BypassCaches && setSize <= threshold {
 					// store in cache
 					if Subs[dep].CacheSema.Acquire() {
 						// fmt.Println("GSET ", dep, queries)
