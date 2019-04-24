@@ -655,7 +655,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	*/
 	var timeMiss time.Time = timeHit
 	setSize := 0
-	expectedSize := (Subs[dep].BackClient.pars.SizeLower + Subs[dep].BackClient.pars.SizeUpper)/2
+	expectedSize := (Subs[dep].BackClient.Pars.SizeLower + Subs[dep].BackClient.Pars.SizeUpper)/2
 	expectedKeys := 10
 	threshold := expectedKeys*(1 << uint32(expectedSize))
 
@@ -678,7 +678,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					fulfilled++
 					queries = append(queries, dep+":"+key)
 					queries = append(queries, string(item))
-					setSize += int64(len(item))
+					setSize += int(len(item))
 				}
 				// Setting the remaining keys to be empty as they were cache
 				// hit but need to be specified as a part of the group
