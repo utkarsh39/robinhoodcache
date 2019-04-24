@@ -655,7 +655,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	*/
 	var timeMiss time.Time = timeHit
 	setSize := 0
-	expectedSize := (Subs[dep].BackClient.Pars.SizeLower + Subs[dep].BackClient.Pars.SizeUpper)/2
+	expectedSize := 15
 	expectedKeys := 10
 	threshold := expectedKeys*(1 << uint32(expectedSize))
 
