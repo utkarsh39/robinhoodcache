@@ -648,6 +648,10 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 	   request from backend
 	*/
 	var timeMiss time.Time = timeHit
+	setSize := 0
+	expectedSize := 15
+	expectedKeys := 10
+	threshold := expectedKeys*(1 << uint32(expectedSize))
 
 	// check cache which items
 	if !hasError && len(backQueries) > 0 {
@@ -667,8 +671,9 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					fulfilled++
 					queries = append(queries, dep+":"+key)
 					queries = append(queries, string(item))
+					setSize += int64(len(item))
 				}
-				if !BypassCaches {
+				if !BypassCaches && setSize <= threshold {
 					// store in cache
 					if Subs[dep].CacheSema.Acquire() {
 						err = MSET(Subs[dep].RedisCacheClient, queries)
