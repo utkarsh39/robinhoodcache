@@ -671,7 +671,7 @@ func ExecuteSubquery(doneDeps chan<- st.Latency, dep string, url []string, cache
 					fulfilled++
 					queries = append(queries, dep+":"+key)
 					queries = append(queries, string(item))
-					setSize += int64(len(item))
+					setSize += int(len(item))
 				}
 				if !BypassCaches && setSize <= threshold {
 					// store in cache
