@@ -14,7 +14,11 @@ mkdir $c && cd $c
 declare -i out=0
 while :
 do
-	curl $2:9999/getstats > $out
+	for ip in "${@:2}"
+	do
+		echo $out"_"$ip
+		curl $ip:9999/getstats > $out"_"$ip
+	done
     out=$((out+5))
 	sleep 300
 done
