@@ -9,7 +9,7 @@ from bokeh.models.annotations import Title
 from bokeh.models.widgets import Dropdown
 import time;
 import csv
-
+import os
 import itertools
 import sys
 #colors has a list of colors which can be used in plots 
@@ -169,7 +169,11 @@ def update(step, dsm, rm, ym, xm, p, func, param):
     csvdata[param].append(row)
     # Flush data to csv every minute
     if len(csvdata[param]) % 60 == 0:
-        f = open(csvfile[param], "w")
+        if os.path.exists(csvfile[param]):
+            append_write = 'a' # append if already exists
+        else:
+            append_write = 'w' # make a new file if not
+        f = open(csvfile[param], append_write)
         writer = csv.writer(f)
         for row in csvdata[param]:
             writer.writerow(row)
